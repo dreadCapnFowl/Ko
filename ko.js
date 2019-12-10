@@ -6,9 +6,15 @@ var download = require('download-file')
 const client = new Discord.Client();
 var sleep = require('sleep');
 var shuffle = require('shuffle-array');
+var timeAgo = require('node-time-ago');
 
-const TOKEN = "YOUR TOKEN HERE";
+const TOKEN = "token";
 var cycleInterval = 1000 * 60 * 60 * 3;
+
+function conf(value)
+{
+  return JSON.parse(fs.readFileSync('ko.conf'))[value]
+}
 function MakePostUpdate(client)
 {
   console.log('Making #website post.')
@@ -19,24 +25,22 @@ function MakePostUpdate(client)
     imgur.uploadFile(chosenFile)
     .then(function (json) {
 
-        var conf = JSON.parse(fs.readFileSync('ko.conf'));
-
         var emb = new Discord.RichEmbed()
           .setColor('#ffccff')
           .setTitle('/trapan/')
           .setURL('https://trapan.net')
-          .setAuthor('Donate', 'https://img.icons8.com/pastel-glyph/2x/like.png', 'https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=X8GB9BW76N9VQ&source=url')
-          .setDescription('Official website of the server.')
+          .setAuthor('Official website', 'https://img.icons8.com/pastel-glyph/2x/like.png', 'https://trapan.net')
+          .setDescription(`This is more than just a server. We're doing what we can to set up ways for you to network with like-minded individuals and have fun all around without competition!`)
           .setThumbnail('https://i.imgur.com/7Q912gx.png')
-          .addField('Updates', conf["update_text"], false)
-          .addField('To do:', conf["todo_text"], false)
-          .addField('About', conf["about_text"], true)
-          .addField('Support', conf["support_text"], true)
-          .addField('Donate', "[Via PayPal or card (through PayPal)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=X8GB9BW76N9VQ&source=url)", false)
+          .addField('About the site', conf("about_text"), false)
+          .addField('Updates', conf("update_text"), true)
+          .addField('To do:', conf("todo_text"), true)
+          .addField('Support', conf("support_text"), true)
+          .addField('Donate', `[Via PayPal (accepts credit card)](${conf("donate_url")})`, false)
           .setImage(json.data.link)
-          .setFooter('site admin: sadcode#6298', 'https://img.icons8.com/pastel-glyph/2x/like.png')
+          .setFooter('(traps are not gay)', 'https://img.icons8.com/pastel-glyph/2x/like.png')
           .setTimestamp()
-          client.channels.get(conf['updates_chan']).send(emb);
+          client.channels.get(conf('updates_chan')).send(emb);
 
     })
     .catch(function (err) {
@@ -52,7 +56,33 @@ function MakePostUpdate(client)
     });
     */
 }
+function PostWelcome(client)
+{
+  console.log('Making #welcome post.')
 
+  var emb = new Discord.RichEmbed()
+    .setColor('#ffccff')
+    .setTitle('Welcome to /trapan/')
+    .setURL('https://trapan.net')
+    .setAuthor('admin team', 'https://img.icons8.com/pastel-glyph/2x/like.png', conf('invite'))
+    .setDescription('Welcome to the holy immortal empire of Trapan! We have our own website as well as this server, feel free to look around and have fun ~ :black_heart:')
+    .setThumbnail('https://i.imgur.com/7Q912gx.png')
+    .setFooter(`take care ~ !`, 'https://img.icons8.com/pastel-glyph/2x/like.png')
+    .setTimestamp()
+    .addField('Access to channels', `> You can either wait until a mod sees what you have posted in <#${conf("gate_chan")}> and grants you <@&${conf("roles")["member"]}> manually, or you can go to the [trapan.net](https://trapan.net) and log in with your Discord account using the API to be automatically granted access.`, false)
+    .addField('Getting around.', `> First be sure to see what\'s in <#${conf('rules_chan')}> to make sure you don\'t end up doing anything bad.\n> Check the <#${conf('updates_chan')}> channel for info on the website and recent updates.`, false)
+
+    if (conf('ranks').length > 0)
+    {
+      var ranksStr = "> In case you're not able to get a role via posting pictures to get a colored name - here is a list of earnable ranks:\n\n";
+      for (var i = 0; i < conf('ranks').length; i++)
+      {
+        ranksStr += `**\`${conf('ranks')[i]['invites']}\`** invites <@&${conf('ranks')[i]['id']}> role.\n`;
+      }
+      emb.addField('Invite rank list', ranksStr, false);
+    }
+    client.channels.get(conf('welcome_chan')).send(emb);
+}
 function PostRules(client)
 {
   console.log('Making #rules post.')
@@ -60,12 +90,12 @@ function PostRules(client)
 
   var emb = new Discord.RichEmbed()
     .setColor('#ffccff')
-    .setTitle('/trapan/')
+    .setTitle('Rules of /trapan/')
     .setURL('https://trapan.net')
-    .setAuthor('Dark Overlord', 'https://img.icons8.com/pastel-glyph/2x/like.png', conf['invite'])
-    .setDescription('Welcome to the holy immortal empire of Trapan! We have our own website as well as this server, feel free to look around and have fun ~:heart:')
+    .setAuthor('admin team', 'https://img.icons8.com/pastel-glyph/2x/like.png', conf['invite'])
+    .setDescription('These are the rules of this server. Do not break them. Report any violations to the <@&650497704945778688> team.')
     .setThumbnail('https://i.imgur.com/7Q912gx.png')
-    .setFooter('all hail the Dark Overlord, leader of the Trapanese empire', 'https://img.icons8.com/pastel-glyph/2x/like.png')
+    .setFooter('all hail the Trapanese empire!', 'https://img.icons8.com/pastel-glyph/2x/like.png')
     .setTimestamp()
 
     if (conf['rules'].length > 0)
@@ -75,9 +105,9 @@ function PostRules(client)
       {
         rulesStr += "**" + (i+1) + ".** " + conf['rules'][i] + '\n';
       }
-      emb.addField('Rules', rulesStr, false);
+      emb.addField('List', rulesStr, false);
     }
-    emb.addField('Access to channels', "You can either wait until a mod evaluates you and grants you <@&639020993880260629> manually, or you can go to the [website](https://trapan.net) and log in with your Discord account using the API to be automatically granted access.", false);
+    emb.addField('Access to channels', "You can either wait until a mod evaluates you and grants you <@&650501350840467467> manually, or you can go to the [website](https://trapan.net) and log in with your Discord account using the API to be automatically granted access.", false);
     client.channels.get(conf['rules_chan']).send(emb);
 }
 function MakeRulesUpdate(client)
@@ -101,6 +131,28 @@ function MakeRulesUpdate(client)
 
         })
         var conf = JSON.parse(fs.readFileSync('ko.conf'));
+}
+function MakeWelcomeUpdate(client)
+{
+  var conf = JSON.parse(fs.readFileSync('ko.conf'));
+
+        client.channels.get(conf['welcome_chan']).fetchMessages({ limit: 1 }).then(messages => {
+            let lastMessage = messages.first();
+            if (lastMessage)
+            {
+
+              lastMessage.delete().then(r => {
+                PostWelcome(client);
+              }).catch(e =>
+              {
+                console.log(e)
+              })
+            }
+            else {
+              PostWelcome(client);
+            }
+
+        })
 }
 function Cycle()
 {
@@ -243,19 +295,16 @@ function nword()
   {
     n += "nigger "
   }
-  client.channels.get('643277334299803649').send(n)
+  client.channels.get('650500008948531230').send(n)
 }
 
 client.on("guildMemberUpdate", function(oldMember, newMember){
 
   // If gain member role ping in general
-  var memberRoleId = '639020993880260629';
-  var announceChannel = '643277336309137448';
+  var memberRoleId = conf('roles')['member'];
   if (!oldMember.roles.has(memberRoleId) && newMember.roles.has(memberRoleId)) {
 
-
-      var conf = JSON.parse(fs.readFileSync('ko.conf'));
-      client.fetchUser(newMember.id).then(usr => {
+    client.fetchUser(newMember.id).then(usr => {
         /*
         var emb = new Discord.RichEmbed()
           .setColor('#ffccff')
@@ -264,19 +313,30 @@ client.on("guildMemberUpdate", function(oldMember, newMember){
           .setThumbnail(usr.avatarURL);
           client.channels.get(announceChannel).send(emb);
           */
-          client.channels.get(conf['announce_chan']).send(
-            '<@' + newMember.id + '> has just joined!\nPlease be nice to them!'
+          var emb = new Discord.RichEmbed()
+            .setColor('#6600cc')
+            .setTitle(`New member!`)
+            .setDescription(`<@${usr.id}> has just joined!\nPlease be nice to them, they only joined Discord ${timeAgo(usr.createdAt)}.`)
+          //.setThumbnail(`	https://cdn.discordapp.com/avatars/${usr.id}/${usr.avatar}.png`);
+          if (usr.avatar)
+            emb.setThumbnail(`	https://cdn.discordapp.com/avatars/${usr.id}/${usr.avatar}.png`);
+
+          client.channels.get(conf('announce_chan')).send(
+            emb
           )
-          client.channels.get(conf['rules_chan']).createInvite({
+
+          client.channels.get(conf('welcome_chan')).createInvite({
             maxAge: 0, //maximum time for the invite, in milliseconds
             maxUses: 0 //maximum times it can be used
           }, `On member role update.`).then(inv => {
             var invurl = 'https://discord.gg/' + inv.code;
             var emb = new Discord.RichEmbed()
               .setColor('#ffccff')
-              .setTitle('/trapan/')
+              .setTitle(newMember.guild.name)
               .setURL(invurl)
-              .setDescription(`Your membership in has been approved!\nClick [here](${invurl}) to jump to the server.\n\nHave a nice stay!\n\nPlease invite your friends using this invite :heart:\n> ${invurl}`)
+              .setDescription(`Your membership in has been approved!`)
+              .addField(`You're in!`, `You have just been granted access to [${newMember.guild.name}](${invurl})\n(click to autojump to server)`)
+              .addField(`Don't be shy!`, 'If you get this message feel free to pop in and chat with our friendly community, however, try to not idle too much, because ')
               .setThumbnail(newMember.guild.iconURL);
               usr.send(emb);
           })
@@ -296,6 +356,7 @@ client.on("guildMemberUpdate", function(oldMember, newMember){
   }
 });
 
+
 client.on('ready', async () => {
   console.log(`Logged in as ${client.user.tag}!`);
 
@@ -309,6 +370,7 @@ client.on('ready', async () => {
   //setInterval(pruneMembers, 1000 * 60 * 60);
 
   MakeRulesUpdate(client)
+  MakeWelcomeUpdate(client)
   // Start timer to message a random user.
   console.log(client.guilds.size + " servers.")
 
@@ -325,24 +387,74 @@ client.on('ready', async () => {
   // Message all msgAllUsers
   //setTimeout(msgAllUsers, 1);
 });
-client.on("guildMemberAdd", (member) => {
-  client.channels.get(JSON.parse(fs.readFileSync('ko.conf'))['gate_chan']).send(
-    'Welcome, <@' + member.id + '>!\nPlease read <#' +JSON.parse(fs.readFileSync('ko.conf'))['rules_chan']+'> and have fun!\n\nType something in this chat to prove you are not a bot and moderator will approve you shortly.'
-  )
+client.on("guildMemberAdd", async (member) => {
+
+  /*
+  InviteManager integration
+  Call invitemanager's last sent message to see who invited the joinee.
+  */
+  //var invman = await client.fetchUser('409875566800404480');
+
+
+  setTimeout(async function() {
+    var createdago = timeAgo(member.user.createdAt);
+    var emb = new Discord.RichEmbed()
+      .setColor('#FF00FF')
+      .setTitle(`Welcome to /trapan/, ${member.user.username}!`)
+      .setDescription(`Please type something in the chat so the moderator can see that you're not an evil bot and let you in!\nBe patient, please!`)
+
+    var details = `I see that you registered ${createdago}.`;
+    if (conf('invitemanager')['enabled'])
+    {
+        try {
+          var invman_chan = client.channels.get(conf('invitemanager')['join_channel']);
+
+          messages = await invman_chan.fetchMessages()
+          var invman_msgs = messages.filter(msg => msg.author.id == conf('invitemanager')['bot_id'])
+
+          var msgs = invman_msgs.array().slice(0, 5).reverse();
+          var found = false;
+          for (var i = 0; i < msgs.length; i++)
+          {
+            var mc = msgs[i].content;
+            var invitee = mc.substring(mc.indexOf('<@')+2, mc.indexOf('>'));
+            var invitername = mc.substring(mc.indexOf('by **')+5, mc.indexOf('** ('))
+            var numinvites = mc.substring(mc.indexOf('(**')+3, mc.indexOf('** invites'))
+
+            let inviterid = client.users.find(u => u.username === invitername);
+            if (invitee == member.user.id)
+            {
+              details += `\nPossibly invited by ${inviterid} (${numinvites} invites)`
+              break;
+            }
+          }
+        } catch(e) {
+            client.channels.get(conf('invitemanager')['admin_channel']).send(member.user.username + ': ' + e)
+        }
+
+
+    }
+    emb.addField(`Details`, details)
+
+    if (!member.user.avatar)
+    {
+      emb.addField('Warning!', `Profile pictures are mandatory! Please get one and let us know or you will not be let in. It's in the <#${conf('rules_chan')}>.`)
+    }
+    var gatechan = client.channels.get(conf('gate_chan'))
+    gatechan.send(emb);
+    gatechan.send(
+      `<@${member.id}>`
+    )
+  }, conf('invitemanager')['enabled'] ? 5000 : 0)
 })
 let sendAllTimeout;
 var ignorechans = [
-  '643277332219691029',
-  '643277332945174538',
-  '643277334299803649',
-  '643277346341781521',
-  '643277352935227392'
 ];
 client.on('message', async msg => {
   if (msg.author.bot)
     return;
 
-  if (msg.author.id=='643310077763387392' && msg.guild == null)
+  if (msg.author.id== JSON.parse(fs.readFileSync('ko.conf'))['owner_id'] && msg.guild == null)
   {
     if (msg.content == "purgewarn")
     {
@@ -375,12 +487,13 @@ dmall [message] - DMs everyone with a message.\n`);
   if (msg.guild == null)
     return;
 
-
+    /*
   if (msg.channel.id == JSON.parse(fs.readFileSync('ko.conf'))['gate_chan'] &&
       msg.author.avatar == null)
   {
     msg.reply('Please get a profile picture.');
   }
+  */
 
   // Timeout cleared
   if (!ignorechans.includes(msg.channel.id))
